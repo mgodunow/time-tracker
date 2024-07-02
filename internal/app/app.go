@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -9,6 +10,9 @@ import (
 	"timeTracker/internal/controllers"
 	"timeTracker/internal/repository"
 	"timeTracker/internal/service"
+
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 )
 
 type app struct {
@@ -32,6 +36,19 @@ func NewApp() *app {
 	return &app{cfg: &config, handler: handler}
 }
 
+// TODO: add path to migrations to config
+func (a *app) Migrate() {
+	m, err := migrate.New("file://migrations", fmt.Sprintf("host=%s port=%s user=%s "+
+		"password=%s dbname=%s",
+		a.cfg.PostgresHost, a.cfg.PostgresPort, a.cfg.PostgresUser,
+		a.cfg.PostgresPassword, a.cfg.PostgresDBName))
+	if err != nil {
+		log.Fatalf("Failed to create migrate instance: %v", err)
+	}
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatalf("Failed to apply migrations: %v", err)
+	}
+}
 func (a *app) ListenAndServe() {
 	log.Printf("Starting server on port %s", a.cfg.AppPort)
 	if err := http.ListenAndServe(":"+a.cfg.AppPort, a.handler.Router()); err != nil {
