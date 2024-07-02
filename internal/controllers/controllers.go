@@ -123,9 +123,14 @@ func (h *Handler) GetUserWorkload(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	h.logger.With("userID", id).Debug("return user's workload")
+	if err = json.NewEncoder(w).Encode(workload); err != nil {
+		h.logger.With("id", id,
+			"start", start,
+			"end", end).Error(err.Error())
+		http.Error(w, InternalServerErrorMessage, http.StatusInternalServerError)
+	}
 
-	json.NewEncoder(w).Encode(workload)
+	h.logger.With("userID", id).Debug("return user's workload")
 }
 
 func (h *Handler) StartUserTask(w http.ResponseWriter, r *http.Request) {
@@ -153,11 +158,17 @@ func (h *Handler) StartUserTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
+	if err = json.NewEncoder(w).Encode(task); err != nil {
+		h.logger.With(
+			"userID", userId,
+			"taskID", taskId,
+		).Error(err.Error())
+		http.Error(w, InternalServerErrorMessage, http.StatusInternalServerError)
+	}
+
 	h.logger.With("userID", userId,
 		"taskID", taskId).Debug("started user's task")
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(task)
 }
 
 func (h *Handler) StopUserTask(w http.ResponseWriter, r *http.Request) {
@@ -186,10 +197,15 @@ func (h *Handler) StopUserTask(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
+	if err = json.NewEncoder(w).Encode(task); err != nil {
+		h.logger.With("operation: ", op,
+			"taskID", task.ID,
+			"userID", task.UserID).Error(err.Error())
+		http.Error(w, InternalServerErrorMessage, http.StatusInternalServerError)
+	}
+
 	h.logger.With("userID", userId,
 		"taskID", taskId).Debug("stoped user's task")
-
-	json.NewEncoder(w).Encode(task)
 }
 
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -239,9 +255,12 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
+	if err = json.NewEncoder(w).Encode(updatedUser); err != nil {
+		h.logger.With("userID", id).Error(err.Error())
+		http.Error(w, InternalServerErrorMessage, http.StatusInternalServerError)
+		return
+	}
 	h.logger.With("userID", id).Debug("updated user")
-
-	json.NewEncoder(w).Encode(updatedUser)
 }
 
 func (h *Handler) AddUser(w http.ResponseWriter, r *http.Request) {
@@ -263,7 +282,10 @@ func (h *Handler) AddUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 
+	if err = json.NewEncoder(w).Encode(enrichedUser); err != nil {
+		h.logger.With("userID", newUser.ID).Error(err.Error())
+		http.Error(w, InternalServerErrorMessage, http.StatusInternalServerError)
+		return
+	}
 	h.logger.With("userID", enrichedUser.ID).Debug("created user")
-
-	json.NewEncoder(w).Encode(enrichedUser)
 }
