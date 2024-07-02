@@ -45,7 +45,6 @@ linters:
     - misspell
     - prealloc
     - staticcheck
-    # - structcheck # but golangci not support generics
     - unconvert
     - unparam
     - unused
