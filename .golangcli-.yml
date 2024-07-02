@@ -1,0 +1,59 @@
+
+linters-settings:
+  govet:
+    check-shadowing: true
+  gocyclo:
+    min-complexity: 32
+  maligned:
+    suggest-new: true
+  dupl:
+    threshold: 200
+  goconst:
+    min-len: 2
+    min-occurrences: 2
+  misspell:
+    locale: US
+  lll:
+    line-length: 140
+  goimports:
+    local-prefixes: github.com/golangci/golangci-lint
+  gocritic:
+    enabled-tags:
+      - performance
+      - style
+
+linters:
+  disable-all: false
+  enable:
+    - gofmt
+    - goimports
+    - bodyclose
+    - deadcode
+    - depguard
+    - dupl
+    - errcheck
+    - exportloopref
+    - goconst
+    - gocritic
+    - gocyclo
+    - goimports
+    - gosec
+    - govet
+    - gosimple
+    - ineffassign
+    - lll
+    - misspell
+    - prealloc
+    - staticcheck
+    # - structcheck # but golangci not support generics
+    - unconvert
+    - unparam
+    - unused
+    - varcheck
+    - whitespace
+
+severity:
+  default-severity: error
+
+run:
+  go: "1.21.1"
