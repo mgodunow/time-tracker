@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"timeTracker/internal/config"
 	"timeTracker/internal/controllers"
 	"timeTracker/internal/repository"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 type app struct {
@@ -38,16 +40,23 @@ func NewApp() *app {
 
 // TODO: add path to migrations to config
 func (a *app) Migrate() {
-	m, err := migrate.New("file://migrations", fmt.Sprintf("host=%s port=%s user=%s "+
-		"password=%s dbname=%s",
-		a.cfg.PostgresHost, a.cfg.PostgresPort, a.cfg.PostgresUser,
-		a.cfg.PostgresPassword, a.cfg.PostgresDBName))
+	path, err := filepath.Abs("./migrations")
+	if err != nil {
+		log.Fatalf("Failed to get absolute path: %v", err)
+	}
+	sourceURL := fmt.Sprintf("file://%s", filepath.ToSlash(path))
+	log.Printf("Using migrations from: %s", sourceURL)
+
+	m, err := migrate.New(sourceURL, fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		a.cfg.PostgresUser, a.cfg.PostgresPassword, a.cfg.PostgresHost,
+		a.cfg.PostgresPort, a.cfg.PostgresDBName))
 	if err != nil {
 		log.Fatalf("Failed to create migrate instance: %v", err)
 	}
 	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatalf("Failed to apply migrations: %v", err)
 	}
+	log.Println("Migrations applied successfully")
 }
 func (a *app) ListenAndServe() {
 	log.Printf("Starting server on port %s", a.cfg.AppPort)
