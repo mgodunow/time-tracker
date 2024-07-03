@@ -44,6 +44,31 @@ func (h *Handler) Router() *mux.Router {
 	return r
 }
 
+// @title time-tracker
+// @version 1.0
+// @description app for tracking time
+// @host localhost:8080
+
+// @tag.name users
+// @tag.description User management operations
+
+// Users godoc
+// @Summary Get users
+// @Description Get a list of users with pagination and filtering
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param page query int true "Page number"
+// @Param limit query int true "Number of items per page"
+// @Param surname query string false "Filter by surname"
+// @Param name query string false "Filter by name"
+// @Param passport_number query string false "Filter by passport number"
+// @Param patronymic query string false "Filter by patronymic"
+// @Param address query string false "Filter by address"
+// @Success 200 {array} models.User
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users [get]
 func (h *Handler) Users(w http.ResponseWriter, r *http.Request) {
 	const op = "controller GetUsers: "
 	page, err := strconv.Atoi(r.URL.Query().Get("page"))
@@ -89,6 +114,19 @@ func filters(r *http.Request) map[string]string {
 		"address": address}
 }
 
+// GetUserWorkload godoc
+// @Summary Get user workload
+// @Description Get the workload of a user for a specific time period
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param start query string true "Start date (YYYY-MM-DD)"
+// @Param end query string true "End date (YYYY-MM-DD)"
+// @Success 200 {array} models.Workload
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users/{id}/workload [get]
 func (h *Handler) GetUserWorkload(w http.ResponseWriter, r *http.Request) {
 	const op = "controller GetUserWorkLoad: "
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
@@ -133,6 +171,18 @@ func (h *Handler) GetUserWorkload(w http.ResponseWriter, r *http.Request) {
 	h.logger.With("userID", id).Debug("return user's workload")
 }
 
+// StartUserTask godoc
+// @Summary Start a user task
+// @Description Start a new task for a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param taskId path int true "Task ID"
+// @Success 200 {object} models.Task
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users/{id}/tasks/{taskId}/start [post]
 func (h *Handler) StartUserTask(w http.ResponseWriter, r *http.Request) {
 	const op = "controller StartUserTask: "
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
@@ -171,6 +221,18 @@ func (h *Handler) StartUserTask(w http.ResponseWriter, r *http.Request) {
 		"taskID", taskId).Debug("started user's task")
 }
 
+// StopUserTask godoc
+// @Summary Stop a user task
+// @Description Stop an ongoing task for a user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param taskId path int true "Task ID"
+// @Success 200 {object} models.Task
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users/{id}/tasks/{taskId}/stop [post]
 func (h *Handler) StopUserTask(w http.ResponseWriter, r *http.Request) {
 	const op = "controller StopUserTask: "
 	userId, err := strconv.Atoi(mux.Vars(r)["id"])
@@ -208,6 +270,17 @@ func (h *Handler) StopUserTask(w http.ResponseWriter, r *http.Request) {
 		"taskID", taskId).Debug("stoped user's task")
 }
 
+// DeleteUser godoc
+// @Summary Delete a user
+// @Description Delete a user by ID
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 204 "No Content"
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users/{id} [delete]
 func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	const op = "controller DeleteUser: "
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
@@ -229,6 +302,18 @@ func (h *Handler) DeleteUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// UpdateUser godoc
+// @Summary Update a user
+// @Description Update a user's information
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body models.User true "Updated user information"
+// @Success 200 {object} models.User
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users/{id} [put]
 func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	const op = "controller UpdateUser: "
 	id, err := strconv.Atoi(mux.Vars(r)["id"])
@@ -263,6 +348,17 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 	h.logger.With("userID", id).Debug("updated user")
 }
 
+// AddUser godoc
+// @Summary Add a new user
+// @Description Create a new user
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param user body models.People true "New user information"
+// @Success 201 {object} models.User
+// @Failure 400 {object} string "Bad Request"
+// @Failure 500 {object} string "Internal Server Error"
+// @Router /users [post]
 func (h *Handler) AddUser(w http.ResponseWriter, r *http.Request) {
 	const op = "controller AddUser: "
 	var newUser models.User

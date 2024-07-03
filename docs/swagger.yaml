@@ -1,0 +1,330 @@
+definitions:
+  models.People:
+    properties:
+      address:
+        example: 123 Main St, City
+        type: string
+      name:
+        example: John
+        type: string
+      patronymic:
+        example: Michael
+        type: string
+      surname:
+        example: Smith
+        type: string
+    type: object
+  models.Task:
+    properties:
+      endTime:
+        example: "2023-07-03T17:00:00Z"
+        type: string
+      id:
+        example: 1
+        type: integer
+      startTime:
+        example: "2023-07-03T09:00:00Z"
+        type: string
+      userId:
+        example: 1
+        type: integer
+    type: object
+  models.User:
+    properties:
+      address:
+        example: 123 Main St, City
+        type: string
+      id:
+        example: 1
+        type: integer
+      name:
+        example: John
+        type: string
+      passportNumber:
+        example: AB1234567
+        type: string
+      patronymic:
+        example: Michael
+        type: string
+      surname:
+        example: Smith
+        type: string
+    type: object
+  models.Workload:
+    properties:
+      hours:
+        example: 8
+        type: integer
+      minutes:
+        example: 30
+        type: integer
+      taskId:
+        example: 1
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: app for tracking time
+  title: time-tracker
+  version: "1.0"
+paths:
+  /users:
+    get:
+      consumes:
+      - application/json
+      description: Get a list of users with pagination and filtering
+      parameters:
+      - description: Page number
+        in: query
+        name: page
+        required: true
+        type: integer
+      - description: Number of items per page
+        in: query
+        name: limit
+        required: true
+        type: integer
+      - description: Filter by surname
+        in: query
+        name: surname
+        type: string
+      - description: Filter by name
+        in: query
+        name: name
+        type: string
+      - description: Filter by passport number
+        in: query
+        name: passport_number
+        type: string
+      - description: Filter by patronymic
+        in: query
+        name: patronymic
+        type: string
+      - description: Filter by address
+        in: query
+        name: address
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.User'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get users
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Create a new user
+      parameters:
+      - description: New user information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.People'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Add a new user
+      tags:
+      - users
+  /users/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user by ID
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Delete a user
+      tags:
+      - users
+    put:
+      consumes:
+      - application/json
+      description: Update a user's information
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Updated user information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/models.User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Update a user
+      tags:
+      - users
+  /users/{id}/tasks/{taskId}/start:
+    post:
+      consumes:
+      - application/json
+      description: Start a new task for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Start a user task
+      tags:
+      - users
+  /users/{id}/tasks/{taskId}/stop:
+    post:
+      consumes:
+      - application/json
+      description: Stop an ongoing task for a user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Task ID
+        in: path
+        name: taskId
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Task'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Stop a user task
+      tags:
+      - users
+  /users/{id}/workload:
+    get:
+      consumes:
+      - application/json
+      description: Get the workload of a user for a specific time period
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Start date (YYYY-MM-DD)
+        in: query
+        name: start
+        required: true
+        type: string
+      - description: End date (YYYY-MM-DD)
+        in: query
+        name: end
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Workload'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get user workload
+      tags:
+      - users
+swagger: "2.0"
+tags:
+- description: User management operations
+  name: users
