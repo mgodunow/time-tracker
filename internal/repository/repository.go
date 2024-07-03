@@ -30,10 +30,6 @@ func NewPostgresRepo(host, port, user, password, dbname string) *postgresRepo {
 	if err != nil {
 		panic(err)
 	}
-	err = db.Ping()
-	if err != nil {
-		panic(err)
-	}
 
 	return &postgresRepo{db: db}
 }
