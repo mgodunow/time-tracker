@@ -29,7 +29,7 @@ func NewApp() *app {
 	}
 	config := config.MustLoad(dir)
 	userService := service.NewUserService(repository.NewRepository(config.PostgresHost,
-		config.AppPort,
+		config.PostgresPort,
 		config.PostgresUser, config.PostgresPassword, config.PostgresDBName), config.GetByPassportDomain)
 	handler := controllers.NewHandler(userService, slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
