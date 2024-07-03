@@ -117,7 +117,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/models.People"
+                            "$ref": "#/definitions/models.User"
                         }
                     }
                 ],
@@ -400,30 +400,17 @@ const docTemplate = `{
         }
     },
     "definitions": {
-        "models.People": {
-            "type": "object",
-            "properties": {
-                "address": {
-                    "type": "string",
-                    "example": "123 Main St, City"
-                },
-                "name": {
-                    "type": "string",
-                    "example": "John"
-                },
-                "patronymic": {
-                    "type": "string",
-                    "example": "Michael"
-                },
-                "surname": {
-                    "type": "string",
-                    "example": "Smith"
-                }
-            }
-        },
         "models.Task": {
             "type": "object",
             "properties": {
+                "createdAt": {
+                    "type": "string",
+                    "example": "2023-07-03T09:00:00Z"
+                },
+                "description": {
+                    "type": "string",
+                    "example": "Project planning"
+                },
                 "endTime": {
                     "type": "string",
                     "example": "2023-07-03T17:00:00Z"
@@ -449,6 +436,10 @@ const docTemplate = `{
                     "type": "string",
                     "example": "123 Main St, City"
                 },
+                "createdAt": {
+                    "type": "string",
+                    "example": "2023-07-03T09:00:00Z"
+                },
                 "id": {
                     "type": "integer",
                     "example": 1
@@ -459,7 +450,7 @@ const docTemplate = `{
                 },
                 "passportNumber": {
                     "type": "string",
-                    "example": "AB1234567"
+                    "example": "1234 5678"
                 },
                 "patronymic": {
                     "type": "string",
@@ -468,12 +459,20 @@ const docTemplate = `{
                 "surname": {
                     "type": "string",
                     "example": "Smith"
+                },
+                "updatedAt": {
+                    "type": "string",
+                    "example": "2023-07-03T09:00:00Z"
                 }
             }
         },
         "models.Workload": {
             "type": "object",
             "properties": {
+                "description": {
+                    "type": "string",
+                    "example": "Project planning"
+                },
                 "hours": {
                     "type": "integer",
                     "example": 8

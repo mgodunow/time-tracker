@@ -354,7 +354,7 @@ func (h *Handler) UpdateUser(w http.ResponseWriter, r *http.Request) {
 // @Tags users
 // @Accept json
 // @Produce json
-// @Param user body models.People true "New user information"
+// @Param user body models.User true "New user information"
 // @Success 201 {object} models.User
 // @Failure 400 {object} string "Bad Request"
 // @Failure 500 {object} string "Internal Server Error"

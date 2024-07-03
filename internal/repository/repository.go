@@ -98,13 +98,14 @@ func (p *postgresRepo) GetUsers(page, limit int, filters map[string]string) ([]m
 }
 func (p *postgresRepo) GetUserWorkload(userID int, start, end time.Time) ([]models.Workload, error) {
 	query := `
-	SELECT task_id, 
-		   EXTRACT(HOUR FROM SUM(end_time - start_time)) AS hours,
-		   EXTRACT(MINUTE FROM SUM(end_time - start_time)) AS minutes
-	FROM tasks
-	WHERE user_id = $1 AND start_time >= $2 AND end_time <= $3
-	GROUP BY task_id
-	ORDER BY SUM(end_time - start_time) DESC`
+	SELECT t.id, t.description, 
+		   ROUND(EXTRACT(EPOCH FROM SUM(te.duration))/3600)::integer AS hours,
+		   ROUND(MOD(EXTRACT(EPOCH FROM SUM(te.duration))::integer, 3600)/60)::integer AS minutes
+	FROM tasks t
+	JOIN time_entries te ON t.id = te.task_id
+	WHERE t.user_id = $1 AND te.start_time >= $2 AND te.end_time <= $3
+	GROUP BY t.id, t.description
+	ORDER BY SUM(te.duration) DESC`
 
 	rows, err := p.db.Query(query, userID, start, end)
 	if err != nil {
@@ -115,7 +116,7 @@ func (p *postgresRepo) GetUserWorkload(userID int, start, end time.Time) ([]mode
 	var workloads []models.Workload
 	for rows.Next() {
 		var w models.Workload
-		if err := rows.Scan(&w.TaskID, &w.Hours, &w.Minutes); err != nil {
+		if err := rows.Scan(&w.TaskID, &w.Description, &w.Hours, &w.Minutes); err != nil {
 			return nil, err
 		}
 		workloads = append(workloads, w)
@@ -124,30 +125,104 @@ func (p *postgresRepo) GetUserWorkload(userID int, start, end time.Time) ([]mode
 	return workloads, nil
 }
 func (p *postgresRepo) StartUserTask(userID, taskID int) (models.Task, error) {
-	query := `
-	INSERT INTO tasks (user_id, task_id, start_time)
-	VALUES ($1, $2, $3)
-	RETURNING id, user_id, task_id, start_time`
+	tx, err := p.db.Begin()
+	if err != nil {
+		return models.Task{}, err
+	}
+	defer tx.Rollback()
 
 	var task models.Task
-	err := p.db.QueryRow(query, userID, taskID, time.Now()).Scan(&task.ID, &task.UserID, &taskID, &task.StartTime)
+	taskQuery := `
+    SELECT id, user_id, description, created_at
+    FROM tasks
+    WHERE id = $1 AND user_id = $2`
+
+	err = tx.QueryRow(taskQuery, taskID, userID).
+		Scan(&task.ID, &task.UserID, &task.Description, &task.CreatedAt)
 	if err != nil {
-		return task, err
+		if err == sql.ErrNoRows {
+			return models.Task{}, errors.New("task not found or doesn't belong to the user")
+		}
+		return models.Task{}, err
+	}
+
+	var activeEntries int
+	checkActiveQuery := `
+    SELECT COUNT(*)
+    FROM time_entries
+    WHERE task_id = $1 AND end_time IS NULL`
+
+	err = tx.QueryRow(checkActiveQuery, taskID).Scan(&activeEntries)
+	if err != nil {
+		return models.Task{}, err
+	}
+	if activeEntries > 0 {
+		return models.Task{}, errors.New("task is already active")
+	}
+
+	timeEntryQuery := `
+    INSERT INTO time_entries (task_id, start_time)
+    VALUES ($1, $2)
+    RETURNING id, start_time`
+
+	var timeEntryID int
+	var startTime time.Time
+	err = tx.QueryRow(timeEntryQuery, taskID, time.Now()).Scan(&timeEntryID, &startTime)
+	if err != nil {
+		return models.Task{}, err
+	}
+
+	task.StartTime = startTime
+
+	if err = tx.Commit(); err != nil {
+		return models.Task{}, err
 	}
 
 	return task, nil
 }
 func (p *postgresRepo) StopUserTask(userID, taskID int) (models.Task, error) {
+	tx, err := p.db.Begin()
+	if err != nil {
+		return models.Task{}, err
+	}
+	defer tx.Rollback()
+
 	query := `
-		UPDATE tasks
-		SET end_time = $1
-		WHERE user_id = $2 AND task_id = $3 AND end_time IS NULL
-		RETURNING id, user_id, task_id, start_time, end_time`
+		UPDATE time_entries
+		SET end_time = $1, duration = $1 - start_time
+		WHERE task_id = $2 AND end_time IS NULL
+		RETURNING id, task_id, start_time, end_time, duration`
+
+	var timeEntry models.TimeEntry
+	var durationStr string
+	err = tx.QueryRow(query, time.Now(), taskID).
+		Scan(&timeEntry.ID, &timeEntry.TaskID, &timeEntry.StartTime, &timeEntry.EndTime, &durationStr)
+	if err != nil {
+		return models.Task{}, err
+	}
+	duration, err := parseDuration(durationStr)
+	if err != nil {
+		return models.Task{}, err
+	}
+	timeEntry.Duration = duration
+
+	taskQuery := `
+		SELECT id, user_id, description, created_at
+		FROM tasks
+		WHERE id = $1`
 
 	var task models.Task
-	err := p.db.QueryRow(query, time.Now(), userID, taskID).Scan(&task.ID, &task.UserID, &taskID, &task.StartTime, &task.EndTime)
+	err = tx.QueryRow(taskQuery, taskID).
+		Scan(&task.ID, &task.UserID, &task.Description, &task.CreatedAt)
 	if err != nil {
-		return task, err
+		return models.Task{}, err
+	}
+
+	task.StartTime = timeEntry.StartTime
+	task.EndTime = timeEntry.EndTime
+
+	if err = tx.Commit(); err != nil {
+		return models.Task{}, err
 	}
 
 	return task, nil
@@ -203,4 +278,20 @@ func (p *postgresRepo) User(id int) (models.User, error) {
 
 func NewRepository(host, port, user, password, dbname string) Repository {
 	return NewPostgresRepo(host, port, user, password, dbname)
+}
+
+func parseDuration(s string) (time.Duration, error) {
+	var hours, minutes, seconds, microseconds int
+
+	_, err := fmt.Sscanf(s, "%d:%d:%d.%d", &hours, &minutes, &seconds, &microseconds)
+	if err != nil {
+		return 0, err
+	}
+
+	duration := time.Duration(hours)*time.Hour +
+		time.Duration(minutes)*time.Minute +
+		time.Duration(seconds)*time.Second +
+		time.Duration(microseconds)*time.Microsecond
+
+	return duration, nil
 }

@@ -1,21 +1,12 @@
 definitions:
-  models.People:
-    properties:
-      address:
-        example: 123 Main St, City
-        type: string
-      name:
-        example: John
-        type: string
-      patronymic:
-        example: Michael
-        type: string
-      surname:
-        example: Smith
-        type: string
-    type: object
   models.Task:
     properties:
+      createdAt:
+        example: "2023-07-03T09:00:00Z"
+        type: string
+      description:
+        example: Project planning
+        type: string
       endTime:
         example: "2023-07-03T17:00:00Z"
         type: string
@@ -34,6 +25,9 @@ definitions:
       address:
         example: 123 Main St, City
         type: string
+      createdAt:
+        example: "2023-07-03T09:00:00Z"
+        type: string
       id:
         example: 1
         type: integer
@@ -41,7 +35,7 @@ definitions:
         example: John
         type: string
       passportNumber:
-        example: AB1234567
+        example: 1234 5678
         type: string
       patronymic:
         example: Michael
@@ -49,9 +43,15 @@ definitions:
       surname:
         example: Smith
         type: string
+      updatedAt:
+        example: "2023-07-03T09:00:00Z"
+        type: string
     type: object
   models.Workload:
     properties:
+      description:
+        example: Project planning
+        type: string
       hours:
         example: 8
         type: integer
@@ -135,7 +135,7 @@ paths:
         name: user
         required: true
         schema:
-          $ref: '#/definitions/models.People'
+          $ref: '#/definitions/models.User'
       produces:
       - application/json
       responses:
